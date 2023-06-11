@@ -1,0 +1,153 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    app.openshift.io/vcs-url: <<unknown>>
+    app.quarkus.io/commit-id: 22cce4cd98258e11713f14107139af152e4e9069
+    app.quarkus.io/build-timestamp: 2023-06-11 - 03:10:42 +0000
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /q/metrics
+    prometheus.io/port: "8082"
+    prometheus.io/scheme: http
+  labels:
+    app.kubernetes.io/name: rest-fights
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.openshift.io/runtime: quarkus
+  name: rest-fights
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8082
+  selector:
+    app.kubernetes.io/name: rest-fights
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+  type: ClusterIP
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  annotations:
+    app.openshift.io/vcs-url: <<unknown>>
+    app.quarkus.io/commit-id: 22cce4cd98258e11713f14107139af152e4e9069
+    app.quarkus.io/build-timestamp: 2023-06-11 - 03:10:42 +0000
+  labels:
+    app.kubernetes.io/name: rest-fights
+    app.openshift.io/runtime: quarkus
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+  name: rest-fights
+spec: {}
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: s2i-java
+spec:
+  dockerImageRepository: fabric8/s2i-java
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    app.openshift.io/vcs-url: <<unknown>>
+    app.quarkus.io/commit-id: 22cce4cd98258e11713f14107139af152e4e9069
+    app.quarkus.io/build-timestamp: 2023-06-11 - 03:10:42 +0000
+  labels:
+    app.kubernetes.io/name: rest-fights
+    app.openshift.io/runtime: quarkus
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+  name: rest-fights
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: rest-fights:1.0.0-SNAPSHOT
+  source:
+    binary: {}
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: s2i-java:2.3
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  annotations:
+    app.openshift.io/vcs-url: <<unknown>>
+    app.quarkus.io/commit-id: 22cce4cd98258e11713f14107139af152e4e9069
+    app.quarkus.io/build-timestamp: 2023-06-11 - 03:10:42 +0000
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /q/metrics
+    prometheus.io/port: "8082"
+    prometheus.io/scheme: http
+  labels:
+    app.kubernetes.io/name: rest-fights
+    app.openshift.io/runtime: quarkus
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+  name: rest-fights
+spec:
+  replicas: 1
+  selector:
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.kubernetes.io/name: rest-fights
+  template:
+    metadata:
+      annotations:
+        app.openshift.io/vcs-url: <<unknown>>
+        app.quarkus.io/commit-id: 22cce4cd98258e11713f14107139af152e4e9069
+        app.quarkus.io/build-timestamp: 2023-06-11 - 03:10:42 +0000
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /q/metrics
+        prometheus.io/port: "8082"
+        prometheus.io/scheme: http
+      labels:
+        app.kubernetes.io/name: rest-fights
+        app.openshift.io/runtime: quarkus
+        app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    spec:
+      containers:
+        - env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: JAVA_APP_JAR
+              value: /deployments/rest-fights-1.0.0-SNAPSHOT-runner.jar
+          image: benav/rest-fights:1.0.0-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /q/health/live
+              port: 8082
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: rest-fights
+          ports:
+            - containerPort: 8082
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /q/health/ready
+              port: 8082
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 10
+  triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+          - rest-fights
+        from:
+          kind: ImageStreamTag
+          name: rest-fights:1.0.0-SNAPSHOT
+      type: ImageChange
